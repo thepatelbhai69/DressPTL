@@ -101,18 +101,56 @@ cd apps/web && pnpm dev
 
 ## Deploy
 
+### Why Cloudflare and not GitHub Pages
+
+Pages serves static files only. Every route in this app is server-rendered
+(`force-dynamic`) and reaches for D1, R2, KV, and a service binding at request
+time — there is no static subset to split out, since even `/` redirects based
+on the session cookie. Cloudflare Workers is the only target that can run it,
+and it is where the data already lives.
+
+### One-time setup
+
+Worker secrets are set once and persist across deploys, so they stay out of CI:
+
 ```bash
-# 1. Proxy first — the web app's service binding depends on it existing.
+npx wrangler login
+
 cd workers/mistral-proxy
-npx wrangler secret put PROXY_SHARED_SECRET
+npx wrangler secret put PROXY_SHARED_SECRET   # any random string
+
+cd ../../apps/web
+npx wrangler secret put PROXY_SHARED_SECRET   # the same value
+```
+
+### Automated deploys
+
+`.github/workflows/deploy.yml` deploys both Workers on every push to `main`
+(or on demand via *Actions → Deploy to Cloudflare → Run workflow*). It applies
+D1 migrations, deploys the proxy, then the web app — in that order, because the
+web Worker's service binding needs the proxy to exist.
+
+Add two repository secrets under **Settings → Secrets and variables → Actions**:
+
+| Secret | Where to get it |
+|---|---|
+| `CLOUDFLARE_ACCOUNT_ID` | Dashboard → Workers & Pages → right sidebar |
+| `CLOUDFLARE_API_TOKEN` | My Profile → API Tokens → *Edit Cloudflare Workers* template, plus **D1: Edit** |
+
+### Manual deploy
+
+```bash
+# Proxy first — the web app's service binding depends on it existing.
+cd workers/mistral-proxy
 npx wrangler deploy          # no MISTRAL_API_KEY needed on the default path
 
-# 2. Web app
 cd ../../apps/web
-npx wrangler secret put PROXY_SHARED_SECRET   # same value as above
 pnpm db:migrate
-pnpm deploy
+pnpm run deploy:cf
 ```
+
+Note `pnpm run deploy:cf`, not `pnpm deploy` — `deploy` is a built-in pnpm
+command that silently shadows package scripts of the same name.
 
 To switch to the direct Mistral API later, set `AI_PROVIDER = "mistral-api"` in
 the proxy's `wrangler.toml`, run `wrangler secret put MISTRAL_API_KEY`, and

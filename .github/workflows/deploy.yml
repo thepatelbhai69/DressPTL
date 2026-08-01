@@ -1,0 +1,63 @@
+name: Deploy to Cloudflare
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Never let two deploys race: the web Worker's service binding points at the
+# proxy, so an interleaved run could bind a half-deployed pair.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Fail early if Cloudflare credentials are missing
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "::error::Set CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID as repository secrets."
+            exit 1
+          fi
+
+      # Migrations are idempotent (CREATE TABLE IF NOT EXISTS), which matters
+      # because the initial schema was applied out-of-band, so wrangler's
+      # migration table does not know about 0001_init.
+      - name: Apply D1 migrations
+        run: pnpm --filter @dressptl/web exec wrangler d1 migrations apply dressptl --remote
+
+      # Proxy first — the web Worker's service binding fails to resolve if the
+      # target Worker does not yet exist.
+      - name: Deploy inference proxy
+        run: pnpm --filter @dressptl/mistral-proxy exec wrangler deploy
+
+      - name: Build and deploy web app
+        run: pnpm --filter @dressptl/web run deploy:cf
+
+      - name: Summary
+        run: |
+          echo "### Deployed" >> $GITHUB_STEP_SUMMARY
+          echo "- \`dressptl-mistral-proxy\` (no public route)" >> $GITHUB_STEP_SUMMARY
+          echo "- \`dressptl-web\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Worker secrets (\`PROXY_SHARED_SECRET\`) are set once via \`wrangler secret put\` and persist across deploys." >> $GITHUB_STEP_SUMMARY
