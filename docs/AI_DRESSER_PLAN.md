@@ -114,7 +114,11 @@ delivery, and account deletion that removes R2 objects and every row.
 |---|---|---|---|
 | D1 | `dressptl` | `4105c84b-5cf8-4361-81b8-d6e8f2a1e349` | Created; schema applied and verified (6 tables, 5 indexes) |
 | KV | `dressptl-rate-limit` | `2a71eb53a6354eafa214c71c6e21368a` | Created |
-| R2 | `dressptl-photos` | — | **Blocked**: R2 must be enabled once from the dashboard (API returns 10042) before the bucket can be created |
+| R2 | `dressptl-photos` | ENAM / Standard | Created and verified |
+
+All IDs are committed in the `wrangler.toml` files. R2 needed a one-time
+dashboard enablement first — it is gated behind a billing-profile
+confirmation, so no API path exists for that step.
 
 ## Verification performed
 
@@ -131,9 +135,12 @@ delivery, and account deletion that removes R2 objects and every row.
 - **Secret scan clean** — no credential material in shipped output; the only
   "Mistral" string in client bundles is the consent copy.
 
-**Not verified:** a live inference call. Workers AI needs a deployed Worker to
-exercise the `AI` binding, and R2 is still disabled, so the upload path cannot
-run end to end yet. `MISTRAL_STUB=1` exercises the full flow without inference.
-The multimodal payload shape (OpenAI-style `image_url` content parts) matches
-what Mistral Small 3.1 expects, but confirm it on the first real call — if the
-model rejects it, that is the first thing to check.
+**Not verified:** a live inference call. The test suite mocks the `AI`
+binding, so it cannot confirm that Workers AI accepts our multimodal payload
+shape (OpenAI-style `image_url` content parts) for Mistral Small 3.1.
+
+`scripts/verify-inference.mjs` closes that gap without a deploy: it hits the
+Workers AI REST API with an inline-generated solid-navy PNG and asks the model
+to name the colour, which separates "payload accepted" from "model actually
+saw the image". Run it before deploying, and again after changing
+`WORKERS_AI_MODEL`.

@@ -13,8 +13,6 @@ database_name = "dressptl"
 database_id = "4105c84b-5cf8-4361-81b8-d6e8f2a1e349"
 migrations_dir = "migrations"
 
-# Requires R2 to be enabled once on the account (Dashboard > R2), then:
-#   wrangler r2 bucket create dressptl-photos
 [[r2_buckets]]
 binding = "PHOTOS"
 bucket_name = "dressptl-photos"
