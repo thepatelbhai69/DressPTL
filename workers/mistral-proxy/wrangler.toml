@@ -1,0 +1,31 @@
+name = "dressptl-mistral-proxy"
+main = "src/index.ts"
+compatibility_date = "2026-06-05"
+
+# No public URL. The web app reaches this Worker only through a service
+# binding, so inference has no internet-facing surface.
+workers_dev = false
+
+# Cloudflare's account-scoped inference binding. No API key exists in this
+# system at all while AI_PROVIDER is "workers-ai".
+[ai]
+binding = "AI"
+
+[vars]
+AI_PROVIDER = "workers-ai"
+# Mistral Small 3.1 24B — vision-capable, so one model covers photo analysis
+# and outfit generation. Free-tier Workers AI allocation applies.
+WORKERS_AI_MODEL = "@cf/mistralai/mistral-small-3.1-24b-instruct"
+RATE_LIMIT_PER_MINUTE = "20"
+
+# To use the direct Mistral API instead (larger models, needs a paid key):
+#   set AI_PROVIDER = "mistral-api" above, then
+#   wrangler secret put MISTRAL_API_KEY
+# Optional overrides: MISTRAL_VISION_MODEL, MISTRAL_TEXT_MODEL
+#
+# Always set, to authenticate the web app over the service binding:
+#   wrangler secret put PROXY_SHARED_SECRET
+
+[[kv_namespaces]]
+binding = "RATE_LIMIT"
+id = "2a71eb53a6354eafa214c71c6e21368a"

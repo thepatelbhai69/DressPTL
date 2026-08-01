@@ -1,0 +1,21 @@
+{
+  "name": "dressptl",
+  "private": true,
+  "version": "0.1.0",
+  "description": "AI dresser: learns your favorite colour blends from outfit photos and recommends new looks.",
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "pnpm -r --if-present test",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "build": "pnpm --filter @dressptl/web build",
+    "dev": "pnpm --filter @dressptl/web dev",
+    "check:no-secrets": "node scripts/check-no-secrets.mjs"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.8"
+  }
+}

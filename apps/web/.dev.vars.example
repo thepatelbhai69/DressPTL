@@ -1,0 +1,5 @@
+# Copy to .dev.vars for local development. .dev.vars is gitignored.
+#
+# The web app itself needs NO Mistral key — that lives only on the proxy
+# Worker. This value must match the proxy's PROXY_SHARED_SECRET.
+PROXY_SHARED_SECRET=local-dev-shared-secret
