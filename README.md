@@ -71,20 +71,14 @@ every database row.
 
 ## Local development
 
-D1 and KV are already provisioned and recorded in `wrangler.toml`:
+All three resources are provisioned and their IDs are already recorded in the
+`wrangler.toml` files — nothing to edit:
 
 | Resource | Name | ID |
 |---|---|---|
 | D1 | `dressptl` | `4105c84b-5cf8-4361-81b8-d6e8f2a1e349` (schema applied) |
 | KV | `dressptl-rate-limit` | `2a71eb53a6354eafa214c71c6e21368a` |
-
-**R2 still needs enabling once** — Cloudflare requires it to be turned on from
-the dashboard before buckets can be created via API:
-
-```bash
-# Dashboard > R2 > enable, then:
-npx wrangler r2 bucket create dressptl-photos
-```
+| R2 | `dressptl-photos` | ENAM, Standard |
 
 ```bash
 pnpm install
