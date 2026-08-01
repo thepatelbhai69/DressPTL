@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@dressptl/shared": "workspace:*",
-    "zod": "^3.25.76"
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260730.1",
