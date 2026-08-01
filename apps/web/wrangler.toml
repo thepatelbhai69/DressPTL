@@ -10,19 +10,21 @@ binding = "ASSETS"
 [[d1_databases]]
 binding = "DB"
 database_name = "dressptl"
-database_id = "REPLACE_WITH_D1_DATABASE_ID"
+database_id = "4105c84b-5cf8-4361-81b8-d6e8f2a1e349"
 migrations_dir = "migrations"
 
+# Requires R2 to be enabled once on the account (Dashboard > R2), then:
+#   wrangler r2 bucket create dressptl-photos
 [[r2_buckets]]
 binding = "PHOTOS"
 bucket_name = "dressptl-photos"
 
 [[kv_namespaces]]
 binding = "RATE_LIMIT"
-id = "REPLACE_WITH_KV_NAMESPACE_ID"
+id = "2a71eb53a6354eafa214c71c6e21368a"
 
-# The Mistral key lives in the proxy Worker, never here. This binding is the
-# only way to reach it, and it carries no public route.
+# Inference lives entirely behind this binding. The web app has no AI binding
+# and no model credentials of its own.
 [[services]]
 binding = "MISTRAL_PROXY"
 service = "dressptl-mistral-proxy"

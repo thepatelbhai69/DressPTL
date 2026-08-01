@@ -8,8 +8,10 @@ recommends new looks built on them.
 
 1. You upload an outfit photo. It goes to a private R2 bucket.
 2. The web app reads the image and hands the bytes to a **separate Worker**
-   that calls a Mistral vision model. That Worker is the only thing holding the
-   API key.
+   that runs a Mistral vision model. By default that is **Workers AI**
+   (`@cf/mistralai/mistral-small-3.1-24b-instruct`) over Cloudflare's
+   account-scoped `AI` binding — so there is **no API key anywhere in the
+   system**.
 3. The model returns garments, colours with prominence, a skin *undertone*
    (warm/cool/neutral, for colour matching), and a silhouette category.
 4. Colours are snapped to a wardrobe palette in CIELAB space, accumulated with
@@ -27,14 +29,24 @@ workers/mistral-proxy/ Worker holding MISTRAL_API_KEY — no public route
 packages/shared/       Colour science, profile aggregation, Zod contracts, prompts
 ```
 
-**Why the key is genuinely not exposed:** the proxy Worker is deployed with
-`workers_dev = false` and no route, so it has no public URL at all. The web app
-reaches it only through a **service binding**, which is an internal RPC channel
-on the same account. Even if someone learns the Worker's name, there is nothing
-on the internet to call. A shared-secret header guards the binding itself.
+### Inference providers
+
+| `AI_PROVIDER` | Backend | Credentials |
+|---|---|---|
+| `workers-ai` (default) | `@cf/mistralai/mistral-small-3.1-24b-instruct` via the `AI` binding — vision-capable, so one model covers analysis *and* generation | **None.** Account-scoped binding, free daily allocation |
+| `mistral-api` | Pixtral Large / Mistral Large on `api.mistral.ai` | `MISTRAL_API_KEY` as a Worker secret |
+
+Start on Workers AI; switch to the direct API only if you need a bigger model.
+
+**Why credentials are genuinely not exposed:** on the default path there is no
+key to expose — the `AI` binding is only usable from inside a Worker on the
+owning account. On the optional `mistral-api` path, the key lives solely on
+this proxy Worker, which deploys with `workers_dev = false` and no route, so it
+has no public URL at all; the web app reaches it only through a **service
+binding**, an internal RPC channel. A shared-secret header guards that binding.
 
 The proxy never touches R2 or D1 — it only takes bytes and returns JSON — so
-compromising it exposes the key's blast radius, not user data.
+compromising it exposes inference, not user data.
 
 **Storage:** D1 for relational data, R2 (private) for photos, KV for rate-limit
 counters. Sessions live in D1 rather than KV so they can be enumerated and
@@ -59,22 +71,30 @@ every database row.
 
 ## Local development
 
+D1 and KV are already provisioned and recorded in `wrangler.toml`:
+
+| Resource | Name | ID |
+|---|---|---|
+| D1 | `dressptl` | `4105c84b-5cf8-4361-81b8-d6e8f2a1e349` (schema applied) |
+| KV | `dressptl-rate-limit` | `2a71eb53a6354eafa214c71c6e21368a` |
+
+**R2 still needs enabling once** — Cloudflare requires it to be turned on from
+the dashboard before buckets can be created via API:
+
+```bash
+# Dashboard > R2 > enable, then:
+npx wrangler r2 bucket create dressptl-photos
+```
+
 ```bash
 pnpm install
-
-# Create the local resources
 cd apps/web
-npx wrangler d1 create dressptl          # put the id in wrangler.toml
-npx wrangler r2 bucket create dressptl-photos
-npx wrangler kv namespace create RATE_LIMIT   # put the id in wrangler.toml
-pnpm db:migrate:local
-
-# Secrets
+pnpm db:migrate:local   # local replica of the schema
 cp .dev.vars.example .dev.vars
 ```
 
-Run the app without a Mistral key by setting `MISTRAL_STUB=1` on the proxy —
-it returns deterministic analyses derived from the image bytes, which is enough
+Run the whole app with no inference at all by setting `MISTRAL_STUB=1` on the
+proxy — it returns deterministic analyses derived from the image bytes, enough
 to exercise palette learning, blends, and recommendations end to end.
 
 ```bash
@@ -90,9 +110,8 @@ cd apps/web && pnpm dev
 ```bash
 # 1. Proxy first — the web app's service binding depends on it existing.
 cd workers/mistral-proxy
-npx wrangler secret put MISTRAL_API_KEY
 npx wrangler secret put PROXY_SHARED_SECRET
-npx wrangler deploy
+npx wrangler deploy          # no MISTRAL_API_KEY needed on the default path
 
 # 2. Web app
 cd ../../apps/web
@@ -101,8 +120,10 @@ pnpm db:migrate
 pnpm deploy
 ```
 
-Set `MISTRAL_VISION_MODEL` / `MISTRAL_TEXT_MODEL` in the proxy's `wrangler.toml`
-to pin newer models as Mistral's lineup changes.
+To switch to the direct Mistral API later, set `AI_PROVIDER = "mistral-api"` in
+the proxy's `wrangler.toml`, run `wrangler secret put MISTRAL_API_KEY`, and
+optionally pin `MISTRAL_VISION_MODEL` / `MISTRAL_TEXT_MODEL`. Change
+`WORKERS_AI_MODEL` to pin a different Workers AI model.
 
 ## Checks
 

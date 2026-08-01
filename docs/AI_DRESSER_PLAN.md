@@ -37,6 +37,24 @@ replaced them.
 | 3 | **Auth.js (NextAuth v5)** + D1 adapter, "sessions in KV" | Internally contradictory: NextAuth's Credentials provider forces JWT sessions, so DB/KV sessions can't work as described; beta-on-workerd is fragile | Hand-rolled PBKDF2 (Web Crypto) + session table in D1, ~100 lines, fully edge-native and unit-tested |
 | 4 | Hardcoded model IDs | Mistral's lineup moves fast (Medium 3.5, Large 3 shipped in 2026) | Model IDs are env-configurable with known-good defaults |
 | 5 | **Drizzle ORM**; KV for sessions | Extra build machinery for marginal benefit at this schema size; KV sessions can't be enumerated for cascade delete | Plain SQL migrations + typed query layer; sessions in D1; KV reserved for rate limiting, where TTL genuinely helps |
+| 6 | **Direct Mistral API with a secret key** | An API key is a liability you have to keep managing; Workers AI hosts a vision-capable Mistral model behind an account-scoped binding | **Workers AI is the default** (`@cf/mistralai/mistral-small-3.1-24b-instruct`) — *no key exists in the system*. The direct API remains a one-variable switch for larger models |
+
+### Inference providers
+
+`AI_PROVIDER` selects the backend behind one `AiProvider` interface:
+
+- **`workers-ai` (default)** — `@cf/mistralai/mistral-small-3.1-24b-instruct`
+  via the `AI` binding. Vision-capable and 128k context, so a single model
+  serves both photo analysis and outfit generation. No credentials at all;
+  runs inside Workers AI's free daily allocation. Uses **constrained decoding**
+  (`response_format: json_schema`), which cuts the corrective-retry rate versus
+  merely asking for JSON.
+- **`mistral-api`** — Pixtral Large / Mistral Large on `api.mistral.ai`,
+  needing `MISTRAL_API_KEY` as a Worker secret.
+
+Providers deliberately return *raw* JSON. The privacy guardrail inspects model
+output **before** Zod coerces it into our types — enforcement has to see what
+the model actually said, not a cleaned-up version of it.
 
 ## Architecture
 
@@ -90,21 +108,32 @@ Not just intent — four mechanisms:
 Plus: explicit consent before first upload, private R2, authenticated image
 delivery, and account deletion that removes R2 objects and every row.
 
+## Provisioned resources
+
+| Resource | Name | ID | State |
+|---|---|---|---|
+| D1 | `dressptl` | `4105c84b-5cf8-4361-81b8-d6e8f2a1e349` | Created; schema applied and verified (6 tables, 5 indexes) |
+| KV | `dressptl-rate-limit` | `2a71eb53a6354eafa214c71c6e21368a` | Created |
+| R2 | `dressptl-photos` | — | **Blocked**: R2 must be enabled once from the dashboard (API returns 10042) before the bucket can be created |
+
 ## Verification performed
 
-- **79 unit tests passing** — colour conversion round-trips, LAB bucketing,
+- **89 unit tests passing** — colour conversion round-trips, LAB bucketing,
   harmony classification, profile aggregation and recency weighting, malformed
   model input, Zod contract enforcement, proxy routing/authz/rate limiting,
-  retry-on-invalid-JSON, sensitive-field rejection, PBKDF2 hash/verify, and
-  multi-megabyte base64 encoding.
+  provider selection, Workers AI payload handling (object vs JSON string vs
+  fenced), quota→429 mapping, corrective-retry behaviour, sensitive-field
+  fail-closed, PBKDF2 hash/verify, and multi-megabyte base64 encoding.
 - **Typecheck clean** across all three packages.
 - **`next build` succeeds** — 17 routes, authenticated pages correctly dynamic.
 - **`opennextjs-cloudflare build` succeeds** — produces `.open-next/worker.js`.
-- **Secret scan clean** — no key material in shipped output; the only
+- **D1 schema verified live** through the Cloudflare API.
+- **Secret scan clean** — no credential material in shipped output; the only
   "Mistral" string in client bundles is the consent copy.
 
-**Not verified:** a live end-to-end run against the real Mistral API, which
-needs a paid key and provisioned Cloudflare resources. `MISTRAL_STUB=1` exists
-so the full flow can be exercised without one. The image payload shape
-(`image_url` as `{url}`) follows the OpenAI-compatible form Mistral accepts;
-confirm against a live call on first deploy.
+**Not verified:** a live inference call. Workers AI needs a deployed Worker to
+exercise the `AI` binding, and R2 is still disabled, so the upload path cannot
+run end to end yet. `MISTRAL_STUB=1` exercises the full flow without inference.
+The multimodal payload shape (OpenAI-style `image_url` content parts) matches
+what Mistral Small 3.1 expects, but confirm it on the first real call — if the
+model rejects it, that is the first thing to check.
