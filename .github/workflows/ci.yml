@@ -13,13 +13,14 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
+      # No `version:` here on purpose — the root package.json sets
+      # packageManager, and specifying both makes this action hard-fail with
+      # "Multiple versions of pnpm specified".
       - uses: pnpm/action-setup@v4
-        with:
-          version: 10
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: pnpm
@@ -44,3 +45,10 @@ jobs:
       # this is a gate rather than a lint.
       - name: Scan build output for leaked secrets
         run: pnpm check:no-secrets
+
+      # Catches the class of mistake that broke the first deploy: a workflow
+      # that is valid YAML but wrong as an Actions config.
+      - name: Lint workflows
+        uses: raven-actions/actionlint@v2
+        with:
+          fail-on-error: true
