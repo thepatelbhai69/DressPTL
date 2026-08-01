@@ -1,0 +1,31 @@
+name = "dressptl-web"
+main = ".open-next/worker.js"
+compatibility_date = "2026-06-05"
+compatibility_flags = ["nodejs_compat"]
+
+[assets]
+directory = ".open-next/assets"
+binding = "ASSETS"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "dressptl"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
+migrations_dir = "migrations"
+
+[[r2_buckets]]
+binding = "PHOTOS"
+bucket_name = "dressptl-photos"
+
+[[kv_namespaces]]
+binding = "RATE_LIMIT"
+id = "REPLACE_WITH_KV_NAMESPACE_ID"
+
+# The Mistral key lives in the proxy Worker, never here. This binding is the
+# only way to reach it, and it carries no public route.
+[[services]]
+binding = "MISTRAL_PROXY"
+service = "dressptl-mistral-proxy"
+
+# Secret — set with `wrangler secret put PROXY_SHARED_SECRET` (same value as
+# the one configured on dressptl-mistral-proxy).

@@ -1,0 +1,21 @@
+name = "dressptl-mistral-proxy"
+main = "src/index.ts"
+compatibility_date = "2026-06-05"
+
+# No public URL. The web app reaches this Worker only through a service
+# binding, so the API key has no internet-facing surface at all.
+workers_dev = false
+
+[vars]
+# Overridable because Mistral's model lineup changes faster than this app does.
+MISTRAL_VISION_MODEL = "pixtral-large-latest"
+MISTRAL_TEXT_MODEL = "mistral-large-latest"
+RATE_LIMIT_PER_MINUTE = "20"
+
+# Secrets — set with `wrangler secret put`, never in this file:
+#   wrangler secret put MISTRAL_API_KEY
+#   wrangler secret put PROXY_SHARED_SECRET
+
+[[kv_namespaces]]
+binding = "RATE_LIMIT"
+id = "REPLACE_WITH_KV_NAMESPACE_ID"
