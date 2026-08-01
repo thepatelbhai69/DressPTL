@@ -20,13 +20,12 @@ jobs:
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
+      # No `version:` — see the note in ci.yml.
       - uses: pnpm/action-setup@v4
-        with:
-          version: 10
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: pnpm
@@ -52,12 +51,49 @@ jobs:
         run: pnpm --filter @dressptl/mistral-proxy exec wrangler deploy
 
       - name: Build and deploy web app
-        run: pnpm --filter @dressptl/web run deploy:cf
+        id: deploy
+        run: |
+          set -o pipefail
+          pnpm --filter @dressptl/web run deploy:cf 2>&1 | tee deploy.log
+          url="$(grep -oE 'https://[a-z0-9._-]+\.workers\.dev' deploy.log | head -1)"
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "Deployed to $url"
+
+      # A green deploy only proves the upload succeeded. This proves the Worker
+      # boots and renders — a broken binding or a runtime import error would
+      # otherwise ship silently.
+      - name: Smoke test the deployment
+        if: steps.deploy.outputs.url != ''
+        run: |
+          url="${{ steps.deploy.outputs.url }}"
+          code=000
+          for attempt in 1 2 3 4 5; do
+            code="$(curl -sS -o body.html -w '%{http_code}' "$url" || echo 000)"
+            [ "$code" = "200" ] && break
+            echo "Attempt $attempt: HTTP $code — waiting for propagation"
+            sleep 6
+          done
+
+          if [ "$code" != "200" ]; then
+            echo "::error::Expected HTTP 200 from $url, got $code"
+            exit 1
+          fi
+          if ! grep -qi "DressPTL" body.html; then
+            echo "::error::Landing page responded but did not render expected content"
+            exit 1
+          fi
+          echo "Smoke test passed: $url returned 200 and rendered."
 
       - name: Summary
+        if: always()
         run: |
-          echo "### Deployed" >> $GITHUB_STEP_SUMMARY
-          echo "- \`dressptl-mistral-proxy\` (no public route)" >> $GITHUB_STEP_SUMMARY
-          echo "- \`dressptl-web\`" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Worker secrets (\`PROXY_SHARED_SECRET\`) are set once via \`wrangler secret put\` and persist across deploys." >> $GITHUB_STEP_SUMMARY
+          {
+            echo "### Deployed"
+            echo ""
+            echo "| Worker | Notes |"
+            echo "|---|---|"
+            echo "| \`dressptl-mistral-proxy\` | no public route (service binding only) |"
+            echo "| \`dressptl-web\` | ${{ steps.deploy.outputs.url || 'URL not captured' }} |"
+            echo ""
+            echo "Worker secrets (\`PROXY_SHARED_SECRET\`) are set once via \`wrangler secret put\` and persist across deploys."
+          } >> "$GITHUB_STEP_SUMMARY"

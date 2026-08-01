@@ -1,0 +1,48 @@
+version: 2
+
+updates:
+  # Workflow actions. Pinned by major tag, so these are mostly security bumps.
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "ci"
+    groups:
+      actions:
+        patterns: ["*"]
+
+  # pnpm workspace root — Dependabot resolves the whole workspace from here.
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "deps"
+    groups:
+      # One PR per concern rather than per package, so CI runs a handful of
+      # times a week instead of once per transitive bump.
+      cloudflare:
+        patterns:
+          - "wrangler"
+          - "@cloudflare/*"
+          - "@opennextjs/*"
+      next:
+        patterns:
+          - "next"
+          - "react"
+          - "react-dom"
+          - "@types/react*"
+      dev-tooling:
+        patterns:
+          - "typescript"
+          - "vitest"
+          - "@types/node"
+    ignore:
+      # Majors for these move the runtime under the app; take them
+      # deliberately, not on a schedule.
+      - dependency-name: "next"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "wrangler"
+        update-types: ["version-update:semver-major"]
