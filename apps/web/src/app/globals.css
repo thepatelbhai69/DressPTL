@@ -345,3 +345,159 @@ button.danger {
   padding: 48px 20px;
   color: var(--muted);
 }
+
+/* ---- Colour season result ---- */
+
+.season {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  padding: 28px 24px 0;
+  overflow: hidden;
+  text-align: center;
+}
+
+.season__label {
+  font-size: 0.76rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.season__name {
+  font-size: clamp(2.6rem, 9vw, 4.2rem);
+  line-height: 1.05;
+  letter-spacing: -0.04em;
+  margin: 6px 0 2px;
+}
+
+.season__tagline {
+  color: var(--muted);
+  margin: 0 0 24px;
+  font-size: 1.05rem;
+}
+
+.season__strip {
+  display: flex;
+  height: 56px;
+  margin: 0 -24px;
+}
+
+.season__strip span {
+  flex: 1;
+}
+
+/* ---- Photo-or-quiz choice ---- */
+
+.choice {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+  text-align: left;
+  padding: 22px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  height: 100%;
+}
+
+.choice:hover {
+  border-color: var(--accent);
+}
+
+.choice__title {
+  font-size: 1.08rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.choice__body {
+  font-weight: 400;
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+/* ---- Quiz ---- */
+
+.quiz {
+  border: none;
+  padding: 0;
+  margin: 0 0 20px;
+}
+
+.quiz legend {
+  font-size: 0.86rem;
+  font-weight: 600;
+  padding: 0;
+  margin-bottom: 8px;
+}
+
+.quiz label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 400;
+  font-size: 0.94rem;
+  margin-bottom: 4px;
+  cursor: pointer;
+}
+
+.quiz input[type="radio"] {
+  margin: 0;
+}
+
+select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  margin-bottom: 16px;
+}
+
+/* ---- Ranked colour list ---- */
+
+.ranked {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 24px;
+}
+
+.ranked li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.94rem;
+}
+
+.ranked__rank {
+  width: 22px;
+  flex: none;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.82rem;
+}
+
+.ranked__chip {
+  width: 30px;
+  height: 30px;
+  flex: none;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+}
+
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+}

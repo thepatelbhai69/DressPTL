@@ -34,7 +34,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
       return;
     }
 
-    router.push(mode === "signup" ? "/onboarding" : "/profile");
+    router.push(mode === "signup" ? "/onboarding" : "/colours");
     router.refresh();
   }
 

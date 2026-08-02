@@ -20,16 +20,19 @@ import {
   generateRecommendationsRequestSchema,
   photoAnalysisSchema,
   recommendationsResponseSchema,
+  skinAnalysisSchema,
+  buildSkinAnalysisPrompt,
   SensitiveFieldError,
   PHOTO_ANALYSIS_JSON_SCHEMA,
   RECOMMENDATIONS_JSON_SCHEMA,
+  SKIN_ANALYSIS_JSON_SCHEMA,
   type PhotoAnalysis,
 } from "@dressptl/shared";
 import { completeStructured } from "./complete";
 import { ProviderError, type AiProvider, type ContentPart } from "./providers/types";
 import { createWorkersAiProvider } from "./providers/workersAi";
 import { createMistralApiProvider } from "./providers/mistralApi";
-import { stubAnalysis, stubRecommendations } from "./stub";
+import { stubAnalysis, stubRecommendations, stubSkinAnalysis } from "./stub";
 
 export interface Env {
   /** Workers AI binding. Present unless AI_PROVIDER is "mistral-api". */
@@ -172,6 +175,51 @@ async function handleAnalyzePhoto(request: Request, env: Env): Promise<Response>
   return json(analysis);
 }
 
+/**
+ * The primary endpoint: read someone's colouring once, so they never have to
+ * upload again.
+ */
+async function handleAnalyzeSkin(request: Request, env: Env): Promise<Response> {
+  const parsed = analyzePhotoRequestSchema.safeParse(
+    await request.json().catch(() => null),
+  );
+  if (!parsed.success) {
+    return errorResponse(`Invalid request: ${parsed.error.message}`, 400);
+  }
+
+  const { imageBase64, mimeType } = parsed.data;
+  if (imageBase64.length > MAX_IMAGE_BASE64_BYTES) {
+    return errorResponse("Image too large", 413);
+  }
+
+  if (env.MISTRAL_STUB === "1") {
+    return json(stubSkinAnalysis(imageBase64));
+  }
+
+  const content: ContentPart[] = [
+    { type: "text", text: buildSkinAnalysisPrompt() },
+    {
+      type: "image_url",
+      image_url: { url: `data:${mimeType};base64,${imageBase64}` },
+    },
+  ];
+
+  const analysis = await completeStructured(
+    selectProvider(env),
+    {
+      messages: [{ role: "user", content }],
+      jsonSchema: SKIN_ANALYSIS_JSON_SCHEMA,
+      maxTokens: 600,
+      // Low temperature: this is a measurement, not a creative task.
+      temperature: 0,
+      vision: true,
+    },
+    skinAnalysisSchema,
+  );
+
+  return json(analysis);
+}
+
 async function handleRecommendations(
   request: Request,
   env: Env,
@@ -241,6 +289,8 @@ export default {
 
     try {
       switch (url.pathname) {
+        case "/analyze-skin":
+          return await handleAnalyzeSkin(request, env);
         case "/analyze-photo":
           return await handleAnalyzePhoto(request, env);
         case "/generate-recommendations":

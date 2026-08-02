@@ -40,7 +40,7 @@ import { bytesToBase64 } from "./encoding";
 
 export { bytesToBase64 };
 
-async function callProxy<T>(
+export async function callProxy<T>(
   path: string,
   body: unknown,
   userId: string,

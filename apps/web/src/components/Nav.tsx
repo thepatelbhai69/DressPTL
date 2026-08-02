@@ -19,14 +19,17 @@ export function Nav({ signedIn }: { signedIn: boolean }) {
       </Link>
       {signedIn ? (
         <>
-          <Link href="/upload" className="nav__link">
-            Upload
-          </Link>
-          <Link href="/profile" className="nav__link">
-            Style profile
+          <Link href="/colours" className="nav__link">
+            My colours
           </Link>
           <Link href="/recommendations" className="nav__link">
             Recommendations
+          </Link>
+          <Link href="/upload" className="nav__link">
+            Wardrobe
+          </Link>
+          <Link href="/profile" className="nav__link">
+            Account
           </Link>
           <button className="linkish" onClick={logout}>
             Sign out
