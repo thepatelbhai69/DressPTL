@@ -21,6 +21,42 @@ export const GUARDRAILS = [
   "bodySilhouette must be one of: rectangle, triangle, inverted-triangle, hourglass, oval, unknown. Use unknown if unclear.",
 ].join("\n- ");
 
+/**
+ * Skin-tone reading — the app's primary analysis.
+ *
+ * The model is asked for colour measurements only. Two things it must be told
+ * explicitly: report low confidence rather than guessing, and flag coloured
+ * lighting, because warm indoor bulbs make almost everyone read warm and a
+ * confident-but-wrong undertone is worse than an honest "not sure".
+ */
+export function buildSkinAnalysisPrompt(): string {
+  return `You are a colour analyst. Read the colouring of the person in this photo for the purpose of choosing flattering clothing colours.
+
+Rules:
+- ${GUARDRAILS}
+- Judge ONLY colour properties. You are measuring light, not describing a person.
+- If the lighting is coloured (warm indoor bulbs, coloured screens, heavy filters), say so in "note" and lower "confidence". Warm lighting makes almost everyone look warm — do not be fooled by it.
+- If the face or skin is not clearly visible, return nulls with "confidence": "low" rather than guessing.
+
+Definitions:
+- "undertone": the temperature beneath the skin. warm = golden/peachy, cool = pink/blue, neutral = balanced.
+- "depth": how light or dark the skin appears. light | medium | deep.
+- "contrast": the difference in lightness between hair, skin, and eyes. low | medium | high.
+- "dominantSkinHex": the average colour of the visible skin, as #rrggbb.
+
+Return ONLY a JSON object with exactly these keys:
+{
+  "undertone": "warm|cool|neutral|null",
+  "depth": "light|medium|deep|null",
+  "contrast": "low|medium|high|null",
+  "confidence": "low|medium|high",
+  "dominantSkinHex": "#rrggbb",
+  "note": "optional caveat about lighting or visibility"
+}
+
+Add no keys beyond those listed.`;
+}
+
 export function buildAnalysisPrompt(): string {
   return `You are a wardrobe colour analyst. Analyse the outfit in this photo.
 

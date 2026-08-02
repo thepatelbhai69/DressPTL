@@ -48,6 +48,19 @@ export const PHOTO_ANALYSIS_JSON_SCHEMA = {
   required: ["garments", "colors", "skinUndertone", "bodySilhouette", "styleTags"],
 } as const;
 
+export const SKIN_ANALYSIS_JSON_SCHEMA = {
+  type: "object",
+  properties: {
+    undertone: { type: ["string", "null"] },
+    depth: { type: ["string", "null"] },
+    contrast: { type: ["string", "null"] },
+    confidence: { type: "string" },
+    dominantSkinHex: { type: "string" },
+    note: { type: "string" },
+  },
+  required: ["undertone", "depth", "contrast", "confidence"],
+} as const;
+
 export const RECOMMENDATIONS_JSON_SCHEMA = {
   type: "object",
   properties: {

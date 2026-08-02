@@ -6,7 +6,7 @@ import { Nav } from "@/components/Nav";
 export const dynamic = "force-dynamic";
 
 export default async function LoginPage() {
-  if (await getCurrentUser()) redirect("/profile");
+  if (await getCurrentUser()) redirect("/colours");
 
   return (
     <>

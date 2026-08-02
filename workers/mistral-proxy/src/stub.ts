@@ -64,6 +64,22 @@ export function stubAnalysis(imageBase64: string): PhotoAnalysis {
   };
 }
 
+const DEPTHS = ["light", "medium", "deep"] as const;
+const CONTRASTS = ["low", "medium", "high"] as const;
+
+/** Deterministic skin reading so the season flow can be exercised offline. */
+export function stubSkinAnalysis(imageBase64: string) {
+  const seed = hash(imageBase64);
+  return {
+    undertone: UNDERTONES[seed % UNDERTONES.length]!,
+    depth: DEPTHS[(seed >> 3) % DEPTHS.length]!,
+    contrast: CONTRASTS[(seed >> 6) % CONTRASTS.length]!,
+    confidence: "medium" as const,
+    dominantSkinHex: "#C8A07E",
+    note: "Stubbed analysis — no model was called.",
+  };
+}
+
 export function stubRecommendations(
   profile: StyleProfile,
   count: number,

@@ -7,36 +7,38 @@ export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
   const user = await getCurrentUser();
-  if (user) redirect(user.consentAt ? "/profile" : "/onboarding");
+  if (user) redirect(user.consentAt ? "/colours" : "/onboarding");
 
   return (
     <>
       <Nav signedIn={false} />
-      <h1>Your colour profile, learned from what you already love.</h1>
+      <h1>Find the colours that suit you. Once.</h1>
       <p className="lede">
-        Upload photos of outfits you feel good in. DressPTL works out the
-        colours and pairings you actually reach for, then suggests new looks
-        built on them.
+        One reading of your natural colouring — from a single photo, or three
+        questions and no photo at all — and you get the palette that flatters
+        you. No uploading your wardrobe every time you want an answer.
       </p>
 
       <div className="grid grid--3" style={{ margin: "32px 0" }}>
         <div className="card">
-          <h2 style={{ margin: "0 0 8px" }}>1. Upload</h2>
+          <h2 style={{ margin: "0 0 8px" }}>1. One reading</h2>
           <p className="muted" style={{ margin: 0 }}>
-            A few photos of outfits you like wearing.
+            A daylight selfie, or answer three questions about your veins,
+            jewellery, and how you react to sun.
           </p>
         </div>
         <div className="card">
-          <h2 style={{ margin: "0 0 8px" }}>2. Learn</h2>
+          <h2 style={{ margin: "0 0 8px" }}>2. Your season</h2>
           <p className="muted" style={{ margin: 0 }}>
-            We extract the palette from each look and track which colours you
-            pair together.
+            Spring, Summer, Autumn, or Winter — with the palette, the metals,
+            and the colours to go carefully with.
           </p>
         </div>
         <div className="card">
-          <h2 style={{ margin: "0 0 8px" }}>3. Wear</h2>
+          <h2 style={{ margin: "0 0 8px" }}>3. Keep it</h2>
           <p className="muted" style={{ margin: 0 }}>
-            Outfit suggestions that extend your palette instead of replacing it.
+            Saved to your account. Outfit ideas build on it whenever you want
+            them.
           </p>
         </div>
       </div>
@@ -47,11 +49,16 @@ export default async function HomePage() {
 
       <h2>What we do and don&rsquo;t look at</h2>
       <p className="muted" style={{ maxWidth: "62ch" }}>
-        Photos are analysed for the clothes and colours in them. We derive skin{" "}
-        <em>undertone</em> — whether warm, cool, or neutral tones suit you — for
-        colour matching only. We never infer or store ethnicity, race,
-        nationality, age, or gender, and your photos are private to your
-        account. You can delete everything at any time.
+        We read three colour properties: your <em>undertone</em> (warm, cool, or
+        neutral), how light or deep your skin appears, and the contrast between
+        your hair, skin, and eyes. That is a measurement of light, and it is all
+        colour matching needs.
+      </p>
+      <p className="muted" style={{ maxWidth: "62ch" }}>
+        We never infer or store ethnicity, race, nationality, age, or gender.
+        Selfies used for the reading are <strong>not stored at all</strong> —
+        they are analysed and discarded. You can overrule the result, and delete
+        everything, at any time.
       </p>
     </>
   );

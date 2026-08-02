@@ -63,6 +63,30 @@ export const analyzePhotoRequestSchema = z
   .strict();
 export type AnalyzePhotoRequest = z.infer<typeof analyzePhotoRequestSchema>;
 
+export const depthSchema = z.enum(["light", "medium", "deep"]);
+export const contrastSchema = z.enum(["low", "medium", "high"]);
+export const confidenceSchema = z.enum(["low", "medium", "high"]);
+
+/**
+ * What the vision model may report about a person's colouring.
+ *
+ * Note what is absent and enforced absent: this is a colour measurement, not a
+ * description of who someone is. `.strict()` rejects anything the model tries
+ * to add, and `assertNoSensitiveFields` runs over the raw output first.
+ */
+export const skinAnalysisSchema = z
+  .object({
+    undertone: undertoneSchema.nullable().default(null),
+    depth: depthSchema.nullable().default(null),
+    contrast: contrastSchema.nullable().default(null),
+    confidence: confidenceSchema.default("low"),
+    /** Average skin colour, used only to detect a lighting cast. */
+    dominantSkinHex: z.string().regex(HEX_COLOR).optional(),
+    note: z.string().max(300).optional(),
+  })
+  .strict();
+export type SkinAnalysisResult = z.infer<typeof skinAnalysisSchema>;
+
 export const paletteEntrySchema = z
   .object({
     name: z.string(),

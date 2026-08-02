@@ -37,7 +37,7 @@ export function OnboardingForm({
       return;
     }
 
-    router.push("/upload");
+    router.push("/colours");
     router.refresh();
   }
 
